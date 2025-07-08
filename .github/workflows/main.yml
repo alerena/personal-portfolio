@@ -1,0 +1,71 @@
+name: Angular CI/CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - develop # Esegui la pipeline per PR verso develop
+      - main    # Esegui la pipeline per PR verso main
+  push:
+    branches:
+      - develop # Esegui la pipeline per push su develop (per il deploy di sviluppo)
+      - main    # Esegui la pipeline per push su main (per il deploy di produzione)
+
+env:
+  NODE_VERSION: '22' # Specifica la versione di Node.js che preferisci usare
+
+jobs:
+  build-test-lint:
+    name: Build, Test and Lint
+    runs-on: ubuntu-latest # Il sistema operativo su cui verrà eseguito il job
+
+    steps:
+      - name: Checkout del codice
+        uses: actions/checkout@v4 # Azione per scaricare il tuo codice
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4 # Azione per configurare Node.js
+        with:
+          node-version: ${{ env.NODE_VERSION }} # Usa la versione definita nell'env
+
+      - name: Installazione delle dipendenze
+        run: npm ci # 'npm ci' è consigliato in CI per installazioni pulite e veloci
+
+      - name: Esegui Linting
+        run: npm run lint # Esegue lo script di linting definito in package.json
+
+      - name: Esegui Test Unitari
+        run: npm test -- --watch=false --browsers=ChromeHeadless # Esegue i test in modalità headless
+
+      - name: Build del Progetto Angular
+        # Compila l'applicazione Angular per la produzione per tutti i branch che arrivano qui
+        run: npm run build -- --configuration=production
+
+      # Carica gli artefatti di build per il deploy job
+      - name: Carica artefatti di build
+        uses: actions/upload-artifact@v4
+        with:
+          name: angular-build-artifacts # Nome dell'artefatto
+          path: dist/personal-portfolio/browser
+          # Il percorso deve corrispondere alla directory di output di ng build
+
+  deploy-to-firebase:
+    name: Deploy su Firebase Hosting
+    needs: build-test-lint # Questo job dipende dal successo del job 'build-test-lint'
+    runs-on: ubuntu-latest
+    # Il deploy avviene solo se la branch è 'develop' o 'main' E il job precedente ha avuto successo
+    if: success() && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+
+    steps:
+      - name: Scarica artefatti di build
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-build-artifacts # Scarica l'artefatto creato dal job precedente
+          path: dist/personal-portfolio/browser
+
+      - name: Installazione Firebase CLI
+        run: npm install -g firebase-tools # Installa la CLI di Firebase
+
+      - name: Deploy su Firebase Hosting (Sviluppo o Produzione)
+        run: firebase deploy --only hosting --project ${{ secrets.FIREBASE_PROJECT_ID }}
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
