@@ -45,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: angular-build-artifacts # Nome dell'artefatto
-          path: dist/personal-portfolio
+          path: dist/personal-portfolio/browser
           # Il percorso deve corrispondere alla directory di output di ng build
 
   deploy-to-firebase:
