@@ -52,19 +52,18 @@ jobs:
     name: Deploy su Firebase Hosting
     needs: build-test-lint # Questo job dipende dal successo del job 'build-test-lint'
     runs-on: ubuntu-latest
-    env:
-      GOOGLE_APPLICATION_CREDENTIALS: google-application-credentials.json
     # Il deploy avviene solo se la branch è 'develop' o 'main' E il job precedente ha avuto successo
     if: success() && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
 
     steps:
+      - name: Checkout del codice sorgente (per file Firebase config)
+        uses: actions/checkout@v4 # Questo scarica l'intero repository, incluso firebase.json
+
       - name: Prepare Google Application Credentials
         shell: bash
         run: |
           echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" | base64 --decode > "google-application-credentials.json"
-
-      - name: Checkout del codice sorgente (per file Firebase config)
-        uses: actions/checkout@v4 # Questo scarica l'intero repository, incluso firebase.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/google-application-credentials.json" >> $GITHUB_ENV
 
       - name: Scarica artefatti di build
         uses: actions/download-artifact@v4
