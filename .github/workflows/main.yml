@@ -69,9 +69,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: angular-build-artifacts
-          # Scarica gli artefatti DIRETAMENTE nella directory specificata in firebase.json
-          # Assicurati che questo path sia la stessa "public" directory in firebase.json
-          path: ./dist/personal-portfolio
+          # Scarica gli artefatti nella struttura corretta per Firebase
+          path: ./dist/personal-portfolio/browser
+
+      - name: Debug - Verifica struttura directory
+        run: |
+          echo "Contenuto directory corrente:"
+          ls -la
+          echo "Contenuto dist:"
+          ls -la dist/ || echo "dist non esiste"
+          echo "Contenuto dist/personal-portfolio:"
+          ls -la dist/personal-portfolio/ || echo "dist/personal-portfolio non esiste"
+          echo "Contenuto dist/personal-portfolio/browser:"
+          ls -la dist/personal-portfolio/browser/ || echo "dist/personal-portfolio/browser non esiste"
 
       - name: Installazione Firebase CLI
         run: npm install -g firebase-tools
